@@ -10,12 +10,12 @@ plugins {
 
 android {
   namespace = "com.example"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.aistudio.cppmaster.vpkznx"
     minSdk = 26
-    targetSdk = 35
+    targetSdk = 36
     versionCode = 1
     versionName = "1.0"
 
@@ -112,6 +112,8 @@ dependencies {
   implementation(libs.googleid)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
+  // Dibutuhkan untuk `Task.await()` (kotlinx.coroutines.tasks) di AuthManager.kt
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
   // implementation(libs.logging.interceptor)
   // implementation(libs.moshi.kotlin)
   // implementation(libs.okhttp)
