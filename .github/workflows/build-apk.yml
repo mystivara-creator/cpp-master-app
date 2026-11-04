@@ -36,55 +36,7 @@ jobs:
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
           if [ ! -f "app/google-services.json" ]; then
-            cat << 'EOF' > app/google-services.json
-{
-  "project_info": {
-    "project_number": "605804267927",
-    "project_id": "gen-lang-client-0359939422",
-    "storage_bucket": "gen-lang-client-0359939422.firebasestorage.app"
-  },
-  "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:605804267927:android:971667ab533a515a5c5cd2",
-        "android_client_info": {
-          "package_name": "com.aistudio.cppmaster.vpkznx"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "605804267927-ldtnj6sh0a6lt9utjte0vgoq7s8q0fkc.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.aistudio.cppmaster.vpkznx",
-            "certificate_hash": "0394289c0909861b517d98a1fa6d7ab2d58d8693"
-          }
-        },
-        {
-          "client_id": "605804267927-fosdqf36bc97mufno5pb5ovn1k21bpkd.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCjPmsZysI0RyZFjlxi6Z9TWqis44-vTzM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "605804267927-fosdqf36bc97mufno5pb5ovn1k21bpkd.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    }
-  ],
-  "configuration_version": "1"
-}
-EOF
+            echo "ewogICJwcm9qZWN0X2luZm8iOiB7CiAgICAicHJvamVjdF9udW1iZXIiOiAiNjA1ODA0MjY3OTI3IiwKICAgICJwcm9qZWN0X2lkIjogImdlbi1sYW5nLWNsaWVudC0wMzU5OTM5NDIyIiwKICAgICJzdG9yYWdlX2J1Y2tldCI6ICJnZW4tbGFuZy1jbGllbnQtMDM1OTkzOTQyMi5maXJlYmFzZXN0b3JhZ2UuYXBwIgogIH0sCiAgImNsaWVudCI6IFsKICAgIHsKICAgICAgImNsaWVudF9pbmZvIjogewogICAgICAgICJtb2JpbGVzZGtfYXBwX2lkIjogIjE6NjA1ODA0MjY3OTI3OmFuZHJvaWQ6OTcxNjY3YWI1MzNhNTE1YTVjNWNkMiIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5haXN0dWRpby5jcHBtYXN0ZXIudnBrem54IgogICAgICAgIH0KICAgICAgfSwKICAgICAgIm9hdXRoX2NsaWVudCI6IFsKICAgICAgICB7CiAgICAgICAgICAiY2xpZW50X2lkIjogIjYwNTgwNDI2NzkyNy1sZHRuajZzaDBhNmx0OXV0anRlMHZnb3E3czhxMGZrYy5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsCiAgICAgICAgICAiY2xpZW50X3R5cGUiOiAxLAogICAgICAgICAgImFuZHJvaWRfaW5mbyI6IHsKICAgICAgICAgICAgInBhY2thZ2VfbmFtZSI6ICJjb20uYWlzdHVkaW8uY3BwbWFzdGVyLnZwa3pueCIsCiAgICAgICAgICAgICJjZXJ0aWZpY2F0ZV9oYXNoIjogIjAzOTQyODljMDkwOTg2MWI1MTdkOThhMWZhNmQ3YWIyZDU4ZDg2OTMiCiAgICAgICAgICB9CiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAiY2xpZW50X2lkIjogIjYwNTgwNDI2NzkyNy1mb3NkcWYzNmJjOTdtdWZubzVwYjVvdm4xazIxYnBrZC5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsCiAgICAgICAgICAiY2xpZW50X3R5cGUiOiAzCiAgICAgICAgfQogICAgICBdLAogICAgICAiYXBpX2tleSI6IFsKICAgICAgICB7CiAgICAgICAgICAiY3VycmVudF9rZXkiOiAiQUl6YVN5Q2pQbXNaeXNJMFJ5WkZqbHhpNlo5VFdxaXM0NC12VHpNIgogICAgICAgIH0KICAgICAgXSwKICAgICAgInNlcnZpY2VzIjogewogICAgICAgICJhcHBpbnZpdGVfc2VydmljZSI6IFsKICAgICAgICAgICJvdGhlcl9wbGF0Zm9ybV9vYXV0aF9jbGllbnQiOiBbCiAgICAgICAgICAgIHsKICAgICAgICAgICAgICAiY2xpZW50X2lkIjogIjYwNTgwNDI2NzkyNy1mb3NkcWYzNmJjOTdtdWZubzVwYjVvdm4xazIxYnBrZC5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsCiAgICAgICAgICAgICAgImNsaWVudF90eXBlIjogMwogICAgICAgICAgICB9CiAgICAgICAgICBdCiAgICAgICAgfQogICAgICB9CiAgICB9CiAgXSwKICAiY29uZmlndXJhdGlvbl92ZXJzaW9uIjogIjEiCn0=" | base64 -d > app/google-services.json
           fi
           chmod +x gradlew
 
