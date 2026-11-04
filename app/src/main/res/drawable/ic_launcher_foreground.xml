@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer hexagon badge glow -->
+    <path
+        android:fillColor="#1538BDF8"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="2"
+        android:pathData="M54,23 L79,37.5 L79,70.5 L54,85 L29,70.5 L29,37.5 Z" />
+    
+    <!-- Bold 'C' character in Cyan -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M48,43 C46,40 43,38 39,38 C32,38 27.5,44 27.5,54 C27.5,64 32,70 39,70 C43,70 46,68 48,65 L44,61.5 C42.8,63 41,64.2 39,64.2 C35,64.2 33,60 33,54 C33,48 35,43.8 39,43.8 C41,43.8 42.8,45 44,46.5 Z" />
+    
+    <!-- First Plus '+' in White -->
+    <!-- Vertical bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M57.5,46.5 L61.5,46.5 L61.5,61.5 L57.5,61.5 Z" />
+    <!-- Horizontal bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,52 L69,52 L69,56 L50,56 Z" />
+        
+    <!-- Second Plus '+' in White -->
+    <!-- Vertical bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M73.5,46.5 L77.5,46.5 L77.5,61.5 L73.5,61.5 Z" />
+    <!-- Horizontal bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,52 L85,52 L85,56 L66,56 Z" />
+
+    <!-- Tiny terminal dot accent -->
+    <path
+        android:fillColor="#6EE7B7"
+        android:pathData="M54,29 C55.1,29 56,29.9 56,31 C56,32.1 55.1,33 54,33 C52.9,33 52,32.1 52,31 C52,29.9 52.9,29 54,29 Z" />
+</vector>
