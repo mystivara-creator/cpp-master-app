@@ -8,12 +8,11 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
@@ -30,12 +29,34 @@ import kotlinx.coroutines.tasks.await
 object AuthManager {
     private const val TAG = "AuthManager"
 
-    private val _currentUser = MutableStateFlow<FirebaseUser?>(Firebase.auth.currentUser)
+    private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
-    init {
-        Firebase.auth.addAuthStateListener { auth ->
+    private var isListenerAttached = false
+
+    fun initAuth(context: Context) {
+        try {
+            ensureFirebase(context)
+            val auth = Firebase.auth
             _currentUser.value = auth.currentUser
+            if (!isListenerAttached) {
+                auth.addAuthStateListener { a ->
+                    _currentUser.value = a.currentUser
+                }
+                isListenerAttached = true
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "FirebaseAuth belum dapat diakses saat ini: ${e.message}")
+        }
+    }
+
+    private fun ensureFirebase(context: Context) {
+        try {
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                FirebaseApp.initializeApp(context)
+            }
+        } catch (e: Throwable) {
+            Log.e(TAG, "Gagal menginisialisasi FirebaseApp: ${e.message}")
         }
     }
 
@@ -47,6 +68,8 @@ object AuthManager {
         onError: (String) -> Unit,
         onCancelled: () -> Unit = {}
     ) {
+        ensureFirebase(context)
+
         val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
         if (resId == 0) {
             onError("Konfigurasi Google Services belum aktif (default_web_client_id tidak ditemukan). Pastikan google-services.json tersedia.")
@@ -67,6 +90,7 @@ object AuthManager {
                     val authResult = Firebase.auth.signInWithCredential(authCredential).await()
                     val user = authResult.user
                     if (user != null) {
+                        _currentUser.value = user
                         syncUserToFirestore(context, user)
                         onSuccess(user)
                     } else {
@@ -78,7 +102,7 @@ object AuthManager {
             } catch (e: GetCredentialCancellationException) {
                 Log.w(TAG, "Google Sign-In dibatalkan oleh pengguna", e)
                 onCancelled()
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Google Sign-In gagal", e)
                 onError(e.localizedMessage ?: "Gagal masuk dengan akun Google")
             }
@@ -91,11 +115,17 @@ object AuthManager {
         scope: CoroutineScope,
         onComplete: () -> Unit
     ) {
-        Firebase.auth.signOut()
+        try {
+            ensureFirebase(context)
+            Firebase.auth.signOut()
+            _currentUser.value = null
+        } catch (e: Throwable) {
+            Log.e(TAG, "Gagal sign out dari Firebase: ${e.message}")
+        }
         scope.launch {
             try {
                 credentialManager.clearCredentialState(ClearCredentialStateRequest())
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "Gagal membersihkan status kredensial", e)
             } finally {
                 onComplete()
@@ -105,6 +135,7 @@ object AuthManager {
 
     private suspend fun syncUserToFirestore(context: Context, user: FirebaseUser) {
         try {
+            ensureFirebase(context)
             val dbResId = context.resources.getIdentifier("firestore_database_id", "string", context.packageName)
             val db = if (dbResId != 0) {
                 FirebaseFirestore.getInstance(context.getString(dbResId))
@@ -120,7 +151,7 @@ object AuthManager {
                 "updatedAt" to FieldValue.serverTimestamp()
             )
             userDoc.set(data, SetOptions.merge()).await()
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "Gagal sinkronisasi data user ke Firestore", e)
         }
     }

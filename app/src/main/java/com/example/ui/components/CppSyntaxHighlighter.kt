@@ -6,7 +6,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.example.ui.theme.CppCodeComment
-import com.example.ui.theme.CppCodeFunction
 import com.example.ui.theme.CppCodeKeyword
 import com.example.ui.theme.CppCodeNumber
 import com.example.ui.theme.CppCodeString
@@ -31,7 +30,17 @@ object CppSyntaxHighlighter {
         "std::cin", "std::endl", "string", "vector", "map", "set", "size_t"
     )
 
+    // Pre-compile regular expressions once to avoid runtime lag
+    private val COMMENT_PATTERN = Pattern.compile("(//[^\n]*|/\\*[\\s\\S]*?\\*/)")
+    private val PREP_PATTERN = Pattern.compile("#\\w+(\\s*<[^>]+>|\\s*\"[^\"]+\")?")
+    private val STRING_PATTERN = Pattern.compile("\"(\\\\.|[^\"])*\"")
+    private val CHAR_PATTERN = Pattern.compile("'(\\\\.|[^'])*'")
+    private val NUM_PATTERN = Pattern.compile("\\b\\d+(\\.\\d+)?f?\\b")
+    private val WORD_PATTERN = Pattern.compile("\\b[a-zA-Z_][a-zA-Z0-9_]*(::[a-zA-Z_][a-zA-Z0-9_]*)?\\b")
+
     fun highlightCppCode(code: String): AnnotatedString {
+        if (code.isEmpty()) return AnnotatedString("")
+
         return buildAnnotatedString {
             append(code)
 
@@ -45,9 +54,8 @@ object CppSyntaxHighlighter {
                 code.length
             )
 
-            // 1. Comments: // ... or /* ... */
-            val commentPattern = Pattern.compile("(//[^\n]*|/\\*[\\s\\S]*?\\*/)")
-            val commentMatcher = commentPattern.matcher(code)
+            // 1. Comments
+            val commentMatcher = COMMENT_PATTERN.matcher(code)
             while (commentMatcher.find()) {
                 addStyle(
                     SpanStyle(color = CppCodeComment),
@@ -56,9 +64,8 @@ object CppSyntaxHighlighter {
                 )
             }
 
-            // 2. Preprocessor: #include <...> or #define
-            val prepPattern = Pattern.compile("#\\w+(\\s*<[^>]+>|\\s*\"[^\"]+\")?")
-            val prepMatcher = prepPattern.matcher(code)
+            // 2. Preprocessor
+            val prepMatcher = PREP_PATTERN.matcher(code)
             while (prepMatcher.find()) {
                 addStyle(
                     SpanStyle(color = CppCodeKeyword, fontWeight = FontWeight.Bold),
@@ -67,9 +74,8 @@ object CppSyntaxHighlighter {
                 )
             }
 
-            // 3. String literals: "..."
-            val stringPattern = Pattern.compile("\"(\\\\.|[^\"])*\"")
-            val stringMatcher = stringPattern.matcher(code)
+            // 3. String literals
+            val stringMatcher = STRING_PATTERN.matcher(code)
             while (stringMatcher.find()) {
                 addStyle(
                     SpanStyle(color = CppCodeString),
@@ -78,9 +84,8 @@ object CppSyntaxHighlighter {
                 )
             }
 
-            // 4. Character literals: '.'
-            val charPattern = Pattern.compile("'(\\\\.|[^'])*'")
-            val charMatcher = charPattern.matcher(code)
+            // 4. Character literals
+            val charMatcher = CHAR_PATTERN.matcher(code)
             while (charMatcher.find()) {
                 addStyle(
                     SpanStyle(color = CppCodeString),
@@ -90,8 +95,7 @@ object CppSyntaxHighlighter {
             }
 
             // 5. Numbers
-            val numPattern = Pattern.compile("\\b\\d+(\\.\\d+)?f?\\b")
-            val numMatcher = numPattern.matcher(code)
+            val numMatcher = NUM_PATTERN.matcher(code)
             while (numMatcher.find()) {
                 addStyle(
                     SpanStyle(color = CppCodeNumber),
@@ -100,9 +104,8 @@ object CppSyntaxHighlighter {
                 )
             }
 
-            // 6. Words: check keywords and types
-            val wordPattern = Pattern.compile("\\b[a-zA-Z_][a-zA-Z0-9_]*(::[a-zA-Z_][a-zA-Z0-9_]*)?\\b")
-            val wordMatcher = wordPattern.matcher(code)
+            // 6. Keywords & Types
+            val wordMatcher = WORD_PATTERN.matcher(code)
             while (wordMatcher.find()) {
                 val word = wordMatcher.group()
                 when {

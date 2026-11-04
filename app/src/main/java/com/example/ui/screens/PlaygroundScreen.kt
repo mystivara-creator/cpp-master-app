@@ -177,7 +177,7 @@ fun PlaygroundScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("playground_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

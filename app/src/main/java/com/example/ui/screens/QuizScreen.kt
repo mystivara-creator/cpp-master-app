@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -101,7 +102,7 @@ fun QuizHubView(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("quiz_hub_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -371,7 +372,7 @@ fun ActiveQuizView(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("active_quiz_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -456,8 +457,11 @@ fun ActiveQuizView(
                                 .background(CppCodeBackground)
                                 .padding(12.dp)
                         ) {
+                            val highlightedSnippet = remember(currentQ.codeSnippet) {
+                                CppSyntaxHighlighter.highlightCppCode(currentQ.codeSnippet)
+                            }
                             Text(
-                                text = CppSyntaxHighlighter.highlightCppCode(currentQ.codeSnippet),
+                                text = highlightedSnippet,
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontFamily = FontFamily.Monospace,
                                     lineHeight = 18.sp
@@ -664,7 +668,7 @@ fun QuizCompletionView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

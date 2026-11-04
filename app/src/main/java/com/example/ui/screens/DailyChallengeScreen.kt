@@ -95,7 +95,7 @@ fun DailyChallengeScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("daily_challenge_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

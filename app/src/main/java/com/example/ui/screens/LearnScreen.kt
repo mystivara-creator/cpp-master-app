@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,21 +69,25 @@ fun LearnScreen(
     val selectedLevel by viewModel.selectedCourseLevel.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    val lessonsForLevel = viewModel.repository.getLessonsByLevel(selectedLevel)
-    val filteredLessons = if (searchQuery.isBlank()) {
-        lessonsForLevel
-    } else {
-        viewModel.repository.allLessons.filter {
-            it.title.contains(searchQuery, ignoreCase = true) ||
-                    it.subtitle.contains(searchQuery, ignoreCase = true) ||
-                    it.summary.contains(searchQuery, ignoreCase = true)
+    val lessonsForLevel = remember(selectedLevel) {
+        viewModel.repository.getLessonsByLevel(selectedLevel)
+    }
+    val filteredLessons = remember(selectedLevel, searchQuery, lessonsForLevel) {
+        if (searchQuery.isBlank()) {
+            lessonsForLevel
+        } else {
+            viewModel.repository.allLessons.filter {
+                it.title.contains(searchQuery, ignoreCase = true) ||
+                        it.subtitle.contains(searchQuery, ignoreCase = true) ||
+                        it.summary.contains(searchQuery, ignoreCase = true)
+            }
         }
     }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("learn_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

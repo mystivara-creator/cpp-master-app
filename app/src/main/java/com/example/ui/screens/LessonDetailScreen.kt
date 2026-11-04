@@ -96,10 +96,10 @@ fun LessonDetailScreen(
 
     if (lesson == null) {
         Box(
-            modifier = Modifier.fillMaxSize().background(CppNavyDark),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
-            Text("Materi tidak ditemukan.", color = TextPrimary)
+            Text("Materi tidak ditemukan.", color = MaterialTheme.colorScheme.onBackground)
         }
         return
     }
@@ -112,7 +112,7 @@ fun LessonDetailScreen(
                         text = "Materi #${lesson.order}",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     )
                 },
@@ -124,7 +124,7 @@ fun LessonDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Kembali",
-                            tint = TextPrimary
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -136,16 +136,16 @@ fun LessonDetailScreen(
                         Icon(
                             imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = "Bookmark",
-                            tint = if (isBookmarked) CppAmberWarning else TextSecondary
+                            tint = if (isBookmarked) CppAmberWarning else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = CppNavyDark
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = CppNavyDark,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier.testTag("lesson_detail_screen")
     ) { innerPadding ->
         Column(

@@ -167,8 +167,9 @@ fun CppCodeEditor(
                     .horizontalScroll(horizontalScrollState)
             ) {
                 if (readOnly) {
+                    val highlightedCode = remember(code) { CppSyntaxHighlighter.highlightCppCode(code) }
                     Text(
-                        text = CppSyntaxHighlighter.highlightCppCode(code),
+                        text = highlightedCode,
                         style = TextStyle(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 13.sp,

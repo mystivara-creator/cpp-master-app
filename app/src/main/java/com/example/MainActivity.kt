@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -85,11 +86,11 @@ fun MainAppScreen(viewModel: CppViewModel) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = CppNavyDark,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (isTopLevelScreen) {
                 NavigationBar(
-                    containerColor = CppNavySurface,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     modifier = Modifier.testTag("main_bottom_nav")
                 ) {
                     NavigationTab.values().forEach { tab ->
@@ -112,13 +113,6 @@ fun MainAppScreen(viewModel: CppViewModel) {
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                 )
                             },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = CppNavyDark,
-                                selectedTextColor = CppBluePrimary,
-                                indicatorColor = CppBluePrimary,
-                                unselectedIconColor = TextSecondary,
-                                unselectedTextColor = TextSecondary
-                            ),
                             modifier = Modifier.testTag("nav_tab_${tab.name.lowercase()}")
                         )
                     }

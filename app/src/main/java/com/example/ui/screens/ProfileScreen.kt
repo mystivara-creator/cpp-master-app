@@ -49,6 +49,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +101,10 @@ fun ProfileScreen(
     val currentUser by AuthManager.currentUser.collectAsState()
 
     val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        AuthManager.initAuth(context)
+    }
+
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
 
@@ -107,42 +112,46 @@ fun ProfileScreen(
     var showResetDialog by remember { mutableStateOf(false) }
 
     // Compute Badges
-    val badges = listOf(
-        AchievementBadge(
-            "b1", "Langkah Pertama", "Pelajari materi pertama C++", "🚀",
-            userProfile.completedLessons >= 1
-        ),
-        AchievementBadge(
-            "b2", "Ahli Dasar", "Tuntaskan 6 materi Dasar C++", "📜",
-            userProfile.completedLessons >= 6
-        ),
-        AchievementBadge(
-            "b3", "Penantang Kode", "Selesaikan tantangan harian pertamamu", "⚡",
-            userProfile.solvedChallenges >= 1
-        ),
-        AchievementBadge(
-            "b4", "Streak 3 Hari", "Aktif belajar 3 hari berturut-turut", "🔥",
-            userProfile.currentStreak >= 3 || userProfile.bestStreak >= 3
-        ),
-        AchievementBadge(
-            "b5", "Pemberantas Kuis", "Selesaikan minimal 3 sesi kuis", "🎯",
-            userProfile.quizzesCompleted >= 3
-        ),
-        AchievementBadge(
-            "b6", "Arsitek Sistem", "Capai level Arsitek C++ (>700 XP)", "🏆",
-            userProfile.totalXp >= 700
+    val badges = remember(userProfile.completedLessons, userProfile.solvedChallenges, userProfile.currentStreak, userProfile.bestStreak, userProfile.quizzesCompleted, userProfile.totalXp) {
+        listOf(
+            AchievementBadge(
+                "b1", "Langkah Pertama", "Pelajari materi pertama C++", "🚀",
+                userProfile.completedLessons >= 1
+            ),
+            AchievementBadge(
+                "b2", "Ahli Dasar", "Tuntaskan 6 materi Dasar C++", "📜",
+                userProfile.completedLessons >= 6
+            ),
+            AchievementBadge(
+                "b3", "Penantang Kode", "Selesaikan tantangan harian pertamamu", "⚡",
+                userProfile.solvedChallenges >= 1
+            ),
+            AchievementBadge(
+                "b4", "Streak 3 Hari", "Aktif belajar 3 hari berturut-turut", "🔥",
+                userProfile.currentStreak >= 3 || userProfile.bestStreak >= 3
+            ),
+            AchievementBadge(
+                "b5", "Pemberantas Kuis", "Selesaikan minimal 3 sesi kuis", "🎯",
+                userProfile.quizzesCompleted >= 3
+            ),
+            AchievementBadge(
+                "b6", "Arsitek Sistem", "Capai level Arsitek C++ (>700 XP)", "🏆",
+                userProfile.totalXp >= 700
+            )
         )
-    )
+    }
 
     // Bookmarked lessons
-    val bookmarkedLessons = viewModel.repository.allLessons.filter {
-        lessonProgress[it.id]?.isBookmarked == true
+    val bookmarkedLessons = remember(lessonProgress) {
+        viewModel.repository.allLessons.filter {
+            lessonProgress[it.id]?.isBookmarked == true
+        }
     }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(CppNavyDark)
+            .background(MaterialTheme.colorScheme.background)
             .testTag("profile_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
