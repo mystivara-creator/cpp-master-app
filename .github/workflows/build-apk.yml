@@ -7,6 +7,9 @@ on:
     branches: [ "**" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Debug APK
@@ -40,9 +43,24 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK Artifact
+      - name: Rename APK for Direct Download
+        run: |
+          mkdir -p release-output
+          cp app/build/outputs/apk/debug/app-debug.apk release-output/CppMaster.apk
+
+      - name: Publish Direct APK to GitHub Releases (Tanpa ZIP)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="v1.0.${{ github.run_number }}"
+          gh release create "$TAG_NAME" release-output/CppMaster.apk \
+            --title "C++ Master APK (Build #${{ github.run_number }})" \
+            --notes "File APK langsung (bukan ZIP). Ketuk CppMaster.apk di bawah untuk langsung menginstall di HP Anda!" \
+            --generate-notes=false || echo "Release already exists or skipped"
+
+      - name: Upload APK Artifact (Cadangan)
         uses: actions/upload-artifact@v4
         with:
-          name: CppMaster-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: CppMaster-Direct-APK
+          path: release-output/CppMaster.apk
           if-no-files-found: error

@@ -4,16 +4,15 @@ Aplikasi Android interaktif berbahasa Indonesia untuk mempelajari pemrograman C+
 
 ---
 
-## 📱 Cara Download & Pasang APK dari GitHub Actions
+## 📱 Cara Download & Pasang APK Langsung ke HP (Tanpa ZIP!)
 
-Anda tidak membutuhkan PC atau laptop untuk membuat file installer `.apk`. GitHub Actions akan otomatis mem-build aplikasinya setiap kali ada perubahan kode:
+Sekarang Anda bisa langsung mendownload file `.apk` murni tanpa perlu mengekstrak ZIP atau memakai ZArchiver:
 
 1. Buka repository ini di browser HP Anda.
-2. Ketuk tab **Actions** di bilah navigasi atas.
-3. Pilih workflow terbaru yang bertanda centang hijau **✓ (Build Debug APK)**.
-4. Gulir ke bagian paling bawah ke bagian **Artifacts**.
-5. Unduh file **`CppMaster-Debug-APK`**.
-6. Buka file yang diunduh dan pasang (install) di perangkat Android Anda.
+2. Di halaman utama repository (bagian sebelah kanan atau gulir ke bawah), ketuk menu **Releases** (atau langsung buka link `https://github.com/USERNAME/cpp-master-app/releases`).
+3. Pada rilis terbaru (*Latest*), ketuk file **`CppMaster.apk`** di bagian *Assets*.
+4. File `.apk` akan langsung terunduh secara utuh ke HP Anda.
+5. Ketuk file yang baru selesai diunduh untuk langsung memasang aplikasi!
 
 ---
 
