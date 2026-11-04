@@ -1,0 +1,21 @@
+{
+  "entities": {
+    "User": {
+      "fields": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "totalXp": { "type": "number" },
+        "currentStreak": { "type": "number" },
+        "bestStreak": { "type": "number" },
+        "lastActiveDate": { "type": "string" },
+        "completedLessons": { "type": "number" },
+        "solvedChallenges": { "type": "number" },
+        "quizzesCompleted": { "type": "number" },
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "C++ Master",
-  "description": "Aplikasi belajar pemrograman C++ dari dasar hingga mahir dengan kuis interaktif, tantangan koding harian, dan editor interaktif.",
+  "description": "Aplikasi belajar pemrograman C++ dari dasar hingga mahir karya mystivara (mystivara-creator) dengan kuis interaktif, tantangan koding harian, dan editor interaktif.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -9,8 +9,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.Terminal
@@ -44,7 +44,7 @@ import com.example.ui.viewmodel.CppViewModel
 import com.example.ui.viewmodel.ScreenDestination
 
 enum class NavigationTab(val label: String, val icon: ImageVector, val destination: ScreenDestination) {
-    BELAJAR("Belajar", Icons.Default.MenuBook, ScreenDestination.Learn),
+    BELAJAR("Belajar", Icons.AutoMirrored.Filled.MenuBook, ScreenDestination.Learn),
     TANTANGAN("Tantangan", Icons.Default.Bolt, ScreenDestination.DailyChallenge),
     KUIS("Kuis", Icons.Default.Quiz, ScreenDestination.QuizHub),
     PLAYGROUND("Playground", Icons.Default.Terminal, ScreenDestination.Playground),
