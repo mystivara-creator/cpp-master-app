@@ -8,7 +8,6 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.example.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -48,12 +47,12 @@ object AuthManager {
         onError: (String) -> Unit,
         onCancelled: () -> Unit = {}
     ) {
-        val clientId = try {
-            context.getString(R.string.default_web_client_id)
-        } catch (e: Exception) {
-            onError("Konfigurasi Google Sign-In hilang (default_web_client_id)")
+        val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+        if (resId == 0) {
+            onError("Konfigurasi Google Services belum aktif (default_web_client_id tidak ditemukan). Pastikan google-services.json tersedia.")
             return
         }
+        val clientId = context.getString(resId)
 
         val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()
         val request = GetCredentialRequest.Builder().addCredentialOption(signInOption).build()
@@ -106,8 +105,12 @@ object AuthManager {
 
     private suspend fun syncUserToFirestore(context: Context, user: FirebaseUser) {
         try {
-            val dbId = context.getString(R.string.firestore_database_id)
-            val db = FirebaseFirestore.getInstance(dbId)
+            val dbResId = context.resources.getIdentifier("firestore_database_id", "string", context.packageName)
+            val db = if (dbResId != 0) {
+                FirebaseFirestore.getInstance(context.getString(dbResId))
+            } else {
+                FirebaseFirestore.getInstance()
+            }
             val userDoc = db.collection("users").document(user.uid)
             val data = mapOf(
                 "userId" to user.uid,

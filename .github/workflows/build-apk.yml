@@ -35,6 +35,57 @@ jobs:
           else
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
+          if [ ! -f "app/google-services.json" ]; then
+            cat << 'EOF' > app/google-services.json
+{
+  "project_info": {
+    "project_number": "605804267927",
+    "project_id": "gen-lang-client-0359939422",
+    "storage_bucket": "gen-lang-client-0359939422.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:605804267927:android:971667ab533a515a5c5cd2",
+        "android_client_info": {
+          "package_name": "com.aistudio.cppmaster.vpkznx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "605804267927-ldtnj6sh0a6lt9utjte0vgoq7s8q0fkc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.cppmaster.vpkznx",
+            "certificate_hash": "0394289c0909861b517d98a1fa6d7ab2d58d8693"
+          }
+        },
+        {
+          "client_id": "605804267927-fosdqf36bc97mufno5pb5ovn1k21bpkd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjPmsZysI0RyZFjlxi6Z9TWqis44-vTzM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "605804267927-fosdqf36bc97mufno5pb5ovn1k21bpkd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+EOF
+          fi
           chmod +x gradlew
 
       - name: Setup Gradle
