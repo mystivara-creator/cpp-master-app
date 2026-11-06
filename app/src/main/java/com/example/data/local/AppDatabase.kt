@@ -35,7 +35,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "cpp_master_db"
-                ).fallbackToDestructiveMigration()
+                )
+                    .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
+                    .fallbackToDestructiveMigration(true)
                     .build()
                 INSTANCE = instance
                 instance

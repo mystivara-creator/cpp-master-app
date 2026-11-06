@@ -1,6 +1,10 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +27,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.RestartAlt
@@ -41,6 +49,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +62,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -70,6 +80,7 @@ import com.example.ui.components.LevelProgressCard
 import com.example.ui.components.StatCard
 import com.example.ui.viewmodel.CppViewModel
 import com.example.ui.viewmodel.ScreenDestination
+import com.example.util.SystemIntegrationHelper
 
 data class AchievementBadge(
     val id: String,
@@ -89,8 +100,50 @@ fun ProfileScreen(
     val colorScheme = MaterialTheme.colorScheme
 
     val context = LocalContext.current
+    var notifPermissionGranted by remember {
+        mutableStateOf(SystemIntegrationHelper.isNotificationPermissionGranted(context))
+    }
+    var storagePermissionGranted by remember {
+        mutableStateOf(SystemIntegrationHelper.isStoragePermissionGranted(context))
+    }
+    var savedCppFilesCount by remember {
+        mutableIntStateOf(SystemIntegrationHelper.getSavedWorkspaceFilesCount(context))
+    }
+
     LaunchedEffect(Unit) {
         AuthManager.initAuth(context)
+        notifPermissionGranted = SystemIntegrationHelper.isNotificationPermissionGranted(context)
+        storagePermissionGranted = SystemIntegrationHelper.isStoragePermissionGranted(context)
+        savedCppFilesCount = SystemIntegrationHelper.getSavedWorkspaceFilesCount(context)
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notifPermissionGranted = granted
+        if (granted) {
+            SystemIntegrationHelper.sendStudyNotification(
+                context = context,
+                title = "Pengingat Belajar C++ Aktif",
+                message = "Notifikasi pengingat latihan C++ Master berhasil diaktifkan."
+            )
+            Toast.makeText(context, "Notifikasi berhasil diaktifkan", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Izin notifikasi ditolak", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        storagePermissionGranted = granted || Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        SystemIntegrationHelper.getWorkspaceDirectory(context)
+        savedCppFilesCount = SystemIntegrationHelper.getSavedWorkspaceFilesCount(context)
+        Toast.makeText(
+            context,
+            if (storagePermissionGranted) "Akses penyimpanan file .cpp siap" else "Menggunakan ruang kerja internal",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -155,13 +208,13 @@ fun ProfileScreen(
         item {
             Column {
                 Text(
-                    text = "Profil & Progres",
+                    text = "Profil & Pengaturan",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.onSurface
                 )
                 Text(
-                    text = "Kelola akun, pencapaian, dan riwayat belajar",
+                    text = "Kelola akun, izin akses, dan riwayat belajar",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant
                 )
@@ -374,6 +427,216 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.labelLarge
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Permissions & Workspace Management Card
+        item {
+            OutlinedCard(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = colorScheme.surfaceContainerLow
+                ),
+                border = BorderStroke(1.dp, colorScheme.outlineVariant)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Izin Akses & Ruang Kerja",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.onSurface
+                    )
+
+                    // Notification Permission Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.secondaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                tint = colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Notifikasi Pengingat Belajar",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (notifPermissionGranted) "Diizinkan • Ketuk untuk uji notifikasi"
+                                else "Belum diizinkan",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        FilledTonalButton(
+                            onClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notifPermissionGranted) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    notifPermissionGranted = true
+                                    val sent = SystemIntegrationHelper.sendStudyNotification(
+                                        context = context,
+                                        title = "Pengingat Belajar C++ Master",
+                                        message = "Tetap konsisten! Selesaikan tantangan harian C++20 hari ini."
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (sent) "Notifikasi pengingat dikirim" else "Izin notifikasi telah aktif",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("profile_notification_btn")
+                        ) {
+                            if (notifPermissionGranted) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Uji", style = MaterialTheme.typography.labelMedium)
+                            } else {
+                                Text("Izinkan", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    // Storage Permission & Workspace Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(colorScheme.secondaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FolderOpen,
+                                contentDescription = null,
+                                tint = colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Penyimpanan Kode C++ (.cpp)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (storagePermissionGranted) "Aktif • $savedCppFilesCount berkas tersimpan di ruang kerja"
+                                else "Izinkan akses untuk menyimpan berkas .cpp",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        FilledTonalButton(
+                            onClick = {
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU && !storagePermissionGranted) {
+                                    storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                                } else {
+                                    storagePermissionGranted = true
+                                    val file = SystemIntegrationHelper.saveCppFileToWorkspace(
+                                        context,
+                                        "sample_hello.cpp",
+                                        "#include <iostream>\nint main() { std::cout << \"Hello C++20\\n\"; return 0; }"
+                                    )
+                                    savedCppFilesCount = SystemIntegrationHelper.getSavedWorkspaceFilesCount(context)
+                                    Toast.makeText(
+                                        context,
+                                        if (file != null) "Ruang penyimpanan aktif (${file.name})"
+                                        else "Penyimpanan siap digunakan",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("profile_storage_btn")
+                        ) {
+                            if (storagePermissionGranted) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Aktif", style = MaterialTheme.typography.labelMedium)
+                            } else {
+                                Text("Izinkan", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    // Reopen Onboarding / Introducing Session
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(colorScheme.secondaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Sesi Pengenalan Aplikasi",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Tampilkan kembali panduan awal & izin",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        TextButton(
+                            onClick = { viewModel.reopenOnboarding() },
+                            modifier = Modifier.testTag("reopen_onboarding_btn")
+                        ) {
+                            Text("Buka", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }

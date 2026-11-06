@@ -8,10 +8,10 @@ import com.example.data.local.entity.UserProfileEntity
 import com.example.data.model.CourseLevel
 import com.example.data.model.DailyChallenge
 import com.example.data.model.Lesson
-import com.example.data.model.QuizQuestion
 import com.example.data.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -24,23 +24,29 @@ class CppRepository(context: Context) {
     private val challengeDao = db.dailyChallengeDao()
     private val profileDao = db.userProfileDao()
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private fun formatDate(date: Date = Date()): String {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date)
+    }
 
-    // 1. Lessons & Progress
+    // 1. Pre-indexed Lessons & Progress for O(1) lookup
     val allLessons: List<Lesson> = CppCurriculumData.lessons
+    private val lessonsById: Map<String, Lesson> = allLessons.associateBy { it.id }
+    private val lessonsByLevel: Map<CourseLevel, List<Lesson>> = allLessons.groupBy { it.level }
 
     fun getLessonsByLevel(level: CourseLevel): List<Lesson> {
-        return allLessons.filter { it.level == level }
+        return lessonsByLevel[level].orEmpty()
     }
 
     fun getLessonById(id: String): Lesson? {
-        return allLessons.find { it.id == id }
+        return lessonsById[id]
     }
 
     val lessonProgressFlow: Flow<Map<String, LessonProgressEntity>> =
-        lessonDao.getAllProgress().map { list ->
-            list.associateBy { it.lessonId }
-        }
+        lessonDao.getAllProgress()
+            .distinctUntilChanged()
+            .map { list ->
+                list.associateBy { it.lessonId }
+            }
 
     suspend fun markLessonCompleted(lessonId: String) {
         val existing = lessonDao.getProgress(lessonId)
@@ -92,9 +98,11 @@ class CppRepository(context: Context) {
     }
 
     val challengeRecordsFlow: Flow<Map<String, DailyChallengeRecordEntity>> =
-        challengeDao.getAllRecords().map { list ->
-            list.associateBy { it.challengeId }
-        }
+        challengeDao.getAllRecords()
+            .distinctUntilChanged()
+            .map { list ->
+                list.associateBy { it.challengeId }
+            }
 
     suspend fun saveChallengeSubmission(
         challenge: DailyChallenge,
@@ -103,7 +111,7 @@ class CppRepository(context: Context) {
         passedCases: Int,
         totalCases: Int
     ) {
-        val todayStr = dateFormat.format(Date())
+        val todayStr = formatDate()
         val existing = challengeDao.getRecord(challenge.id)
         val wasAlreadyPassed = existing?.isPassed == true
 
@@ -141,7 +149,7 @@ class CppRepository(context: Context) {
             solvedChallenges = solvedChallenges,
             quizzesCompleted = entity.quizzesCompleted
         )
-    }
+    }.distinctUntilChanged()
 
     suspend fun addXp(amount: Int) {
         ensureProfileInitialized()
@@ -156,14 +164,14 @@ class CppRepository(context: Context) {
         updateActiveStreak()
     }
 
-    private suspend fun ensureProfileInitialized() {
+    suspend fun ensureProfileInitialized() {
         val existing = profileDao.getUserProfileDirect()
         if (existing == null) {
-            val todayStr = dateFormat.format(Date())
+            val todayStr = formatDate()
             profileDao.insertOrUpdate(
                 UserProfileEntity(
                     id = 1,
-                    totalXp = 50, // Initial welcome bonus
+                    totalXp = 50,
                     currentStreak = 1,
                     bestStreak = 1,
                     lastActiveDate = todayStr,
@@ -176,16 +184,15 @@ class CppRepository(context: Context) {
     private suspend fun updateActiveStreak() {
         ensureProfileInitialized()
         val current = profileDao.getUserProfileDirect() ?: return
-        val todayStr = dateFormat.format(Date())
+        val todayStr = formatDate()
 
         if (current.lastActiveDate == todayStr) {
-            // Already active today
             return
         }
 
         val cal = Calendar.getInstance()
         cal.add(Calendar.DAY_OF_YEAR, -1)
-        val yesterdayStr = dateFormat.format(cal.time)
+        val yesterdayStr = formatDate(cal.time)
 
         val newStreak = if (current.lastActiveDate == yesterdayStr) {
             current.currentStreak + 1

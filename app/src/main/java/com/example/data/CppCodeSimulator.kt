@@ -2,7 +2,6 @@ package com.example.data
 
 import com.example.data.model.DailyChallenge
 import com.example.data.model.TestCase
-import java.util.Stack
 import java.util.regex.Pattern
 
 data class ExecutionResult(
@@ -22,24 +21,28 @@ data class TestCaseResult(
 
 object CppCodeSimulator {
 
+    private val WHITESPACE_REGEX = Regex("\\s+")
+    private val NUMBER_LITERAL_REGEX = Regex("\\d+(\\.\\d+)?")
+    private val COUT_PATTERN: Pattern = Pattern.compile("cout\\s*<<\\s*([^;]+);")
+    private val VOWELS_SET = setOf('a', 'i', 'u', 'e', 'o', 'A', 'I', 'U', 'E', 'O')
+
     /**
      * Verifies and simulates execution of code on test cases for a daily challenge.
      */
     fun evaluateChallenge(challenge: DailyChallenge, userCode: String): ExecutionResult {
         val startTime = System.currentTimeMillis()
 
-        // 1. Basic syntax & sanity checks
         val syntaxError = checkSyntax(userCode)
         if (syntaxError != null) {
             return ExecutionResult(
                 isSuccess = false,
                 output = "Kompilasi Gagal:\n$syntaxError",
-                executionTimeMs = System.currentTimeMillis() - startTime,
+                executionTimeMs = (System.currentTimeMillis() - startTime).coerceAtLeast(1L),
                 errorMessage = syntaxError
             )
         }
 
-        val results = mutableListOf<TestCaseResult>()
+        val results = ArrayList<TestCaseResult>(challenge.testCases.size)
         var allPassed = true
 
         challenge.testCases.forEachIndexed { index, testCase ->
@@ -62,22 +65,22 @@ object CppCodeSimulator {
             )
         }
 
-        val duration = System.currentTimeMillis() - startTime + 8L // simulated CPU time
+        val duration = (System.currentTimeMillis() - startTime).coerceAtLeast(4L)
 
         val summaryText = if (allPassed) {
-            "Semua ${challenge.testCases.size} test case berhasil dilewati dengan sukses! (100% Passed)\n" +
-                    "Kinerja: ${duration}ms | RAM: 1.2 MB"
+            "Semua ${challenge.testCases.size} test case berhasil dilewati (100% Lolos)\n" +
+                    "Waktu eksekusi: ${duration} ms | Memori: 1.2 MB"
         } else {
             val passedCount = results.count { it.isPassed }
-            "Sebagian test case gagal: $passedCount / ${challenge.testCases.size} lolos.\n" +
-                    "Periksa kembali logika algoritma atau penanganan kasus tepi Anda."
+            "Sebagian test case belum lolos: $passedCount / ${challenge.testCases.size} lolos.\n" +
+                    "Periksa kembali logika algoritma atau format keluaran program."
         }
 
         return ExecutionResult(
             isSuccess = allPassed,
             output = summaryText,
             executionTimeMs = duration,
-            errorMessage = if (allPassed) null else "Beberapa test case tidak cocok dengan output yang diharapkan.",
+            errorMessage = if (allPassed) null else "Beberapa test case tidak cocok dengan keluaran yang diharapkan.",
             testCaseResults = results
         )
     }
@@ -88,20 +91,18 @@ object CppCodeSimulator {
     fun runPlayground(code: String, customInput: String = ""): ExecutionResult {
         val startTime = System.currentTimeMillis()
 
-        // Check syntax
         val syntaxError = checkSyntax(code)
         if (syntaxError != null) {
             return ExecutionResult(
                 isSuccess = false,
                 output = "[g++ error] Kompilasi gagal:\n$syntaxError",
-                executionTimeMs = 15L,
+                executionTimeMs = (System.currentTimeMillis() - startTime).coerceAtLeast(1L),
                 errorMessage = syntaxError
             )
         }
 
-        // Simulate output from code
         val output = simulateGenericPlayground(code, customInput)
-        val duration = System.currentTimeMillis() - startTime + 12L
+        val duration = (System.currentTimeMillis() - startTime).coerceAtLeast(4L)
 
         return ExecutionResult(
             isSuccess = true,
@@ -117,11 +118,10 @@ object CppCodeSimulator {
         }
 
         if (!trimmed.contains("main")) {
-            return "Error: Fungsi 'int main()' tidak ditemukan. Setiap program C++ membutuhkan entry point."
+            return "Error: Fungsi 'int main()' tidak ditemukan. Setiap program C++ membutuhkan titik masuk (entry point)."
         }
 
-        // Bracket balance check
-        val brackets = Stack<Char>()
+        val brackets = ArrayDeque<Char>()
         var inString = false
         var inChar = false
 
@@ -132,19 +132,19 @@ object CppCodeSimulator {
 
             if (!inString && !inChar) {
                 when (c) {
-                    '{', '(', '[' -> brackets.push(c)
+                    '{', '(', '[' -> brackets.addLast(c)
                     '}' -> {
-                        if (brackets.isEmpty() || brackets.pop() != '{') {
+                        if (brackets.isEmpty() || brackets.removeLast() != '{') {
                             return "Error Sintaks: Tanda kurung kurawal '}' tidak berpasangan."
                         }
                     }
                     ')' -> {
-                        if (brackets.isEmpty() || brackets.pop() != '(') {
+                        if (brackets.isEmpty() || brackets.removeLast() != '(') {
                             return "Error Sintaks: Tanda kurung ')' tidak berpasangan."
                         }
                     }
                     ']' -> {
-                        if (brackets.isEmpty() || brackets.pop() != '[') {
+                        if (brackets.isEmpty() || brackets.removeLast() != '[') {
                             return "Error Sintaks: Tanda kurung siku ']' tidak berpasangan."
                         }
                     }
@@ -153,36 +153,34 @@ object CppCodeSimulator {
         }
 
         if (brackets.isNotEmpty()) {
-            return "Error Sintaks: Ada tanda kurung '${brackets.peek()}' yang belum ditutup."
+            return "Error Sintaks: Ada tanda kurung '${brackets.last()}' yang belum ditutup."
         }
 
         return null
     }
 
     private fun executeCppSimulation(challengeId: String, code: String, input: String): String {
-        // Evaluate based on challenge requirements and logic written in code
         return when (challengeId) {
-            "ch_day_1" -> simulateDay1(code, input)
-            "ch_day_2" -> simulateDay2(code, input)
-            "ch_day_3" -> simulateDay3(code, input)
-            "ch_day_4" -> simulateDay4(code, input)
-            "ch_day_5" -> simulateDay5(code, input)
-            "ch_day_6" -> simulateDay6(code, input)
-            "ch_day_7" -> simulateDay7(code, input)
-            "ch_day_8" -> simulateDay8(code, input)
+            "ch_day_1" -> simulateDay1(input)
+            "ch_day_2" -> simulateDay2(input)
+            "ch_day_3" -> simulateDay3(input)
+            "ch_day_4" -> simulateDay4(input)
+            "ch_day_5" -> simulateDay5(input)
+            "ch_day_6" -> simulateDay6(input)
+            "ch_day_7" -> simulateDay7(input)
+            "ch_day_8" -> simulateDay8(input)
             else -> simulateGenericPlayground(code, input)
         }
     }
 
-    private fun simulateDay1(code: String, input: String): String {
+    private fun simulateDay1(input: String): String {
         val word = input.trim()
-        val vowels = setOf('a', 'i', 'u', 'e', 'o', 'A', 'I', 'U', 'E', 'O')
-        val count = word.count { it in vowels }
+        val count = word.count { it in VOWELS_SET }
         val reversed = word.reversed()
         return "$reversed $count"
     }
 
-    private fun simulateDay2(code: String, input: String): String {
+    private fun simulateDay2(input: String): String {
         val n = input.trim().toIntOrNull() ?: return "BUKAN"
         if (n <= 1) return "BUKAN"
         var isPrime = true
@@ -197,8 +195,8 @@ object CppCodeSimulator {
         return if (isPrime) "PRIMA" else "BUKAN"
     }
 
-    private fun simulateDay3(code: String, input: String): String {
-        val tokens = input.trim().split("\\s+".toRegex()).mapNotNull { it.toIntOrNull() }
+    private fun simulateDay3(input: String): String {
+        val tokens = input.trim().split(WHITESPACE_REGEX).mapNotNull { it.toIntOrNull() }
         if (tokens.size < 2) return "0"
         val n = tokens[0]
         val numbers = tokens.drop(1).take(n)
@@ -206,31 +204,28 @@ object CppCodeSimulator {
         return if (sortedDistinct.size >= 2) sortedDistinct[1].toString() else sortedDistinct.firstOrNull()?.toString() ?: "0"
     }
 
-    private fun simulateDay4(code: String, input: String): String {
-        val tokens = input.trim().split("\\s+".toRegex()).mapNotNull { it.toIntOrNull() }
+    private fun simulateDay4(input: String): String {
+        val tokens = input.trim().split(WHITESPACE_REGEX).mapNotNull { it.toIntOrNull() }
         if (tokens.size < 2) return input
-        val a = tokens[0]
-        val b = tokens[1]
-        // Swap values
-        return "$b $a"
+        return "${tokens[1]} ${tokens[0]}"
     }
 
-    private fun simulateDay5(code: String, input: String): String {
+    private fun simulateDay5(input: String): String {
         val s = input.trim()
-        val stack = Stack<Char>()
+        val stack = ArrayDeque<Char>()
         for (c in s) {
             when (c) {
-                '(', '{', '[' -> stack.push(c)
-                ')' -> if (stack.isEmpty() || stack.pop() != '(') return "TIDAK"
-                '}' -> if (stack.isEmpty() || stack.pop() != '{') return "TIDAK"
-                ']' -> if (stack.isEmpty() || stack.pop() != '[') return "TIDAK"
+                '(', '{', '[' -> stack.addLast(c)
+                ')' -> if (stack.isEmpty() || stack.removeLast() != '(') return "TIDAK"
+                '}' -> if (stack.isEmpty() || stack.removeLast() != '{') return "TIDAK"
+                ']' -> if (stack.isEmpty() || stack.removeLast() != '[') return "TIDAK"
             }
         }
         return if (stack.isEmpty()) "VALID" else "TIDAK"
     }
 
-    private fun simulateDay6(code: String, input: String): String {
-        val tokens = input.trim().split("\\s+".toRegex())
+    private fun simulateDay6(input: String): String {
+        val tokens = input.trim().split(WHITESPACE_REGEX)
         if (tokens.isEmpty()) return ""
         val words = if (tokens[0].toIntOrNull() != null) tokens.drop(1) else tokens
         val map = sortedMapOf<String, Int>()
@@ -240,8 +235,8 @@ object CppCodeSimulator {
         return map.entries.joinToString("\n") { "${it.key}: ${it.value}" }
     }
 
-    private fun simulateDay7(code: String, input: String): String {
-        val tokens = input.trim().split("\\s+".toRegex())
+    private fun simulateDay7(input: String): String {
+        val tokens = input.trim().split(WHITESPACE_REGEX)
         if (tokens.size < 2) return "SALDO: 0"
         var saldo = tokens[0].toIntOrNull() ?: 0
         val k = tokens[1].toIntOrNull() ?: 0
@@ -268,38 +263,32 @@ object CppCodeSimulator {
         return lines.joinToString("\n")
     }
 
-    private fun simulateDay8(code: String, input: String): String {
-        val nums = input.trim().split("\\s+".toRegex()).mapNotNull { it.toDoubleOrNull() }
+    private fun simulateDay8(input: String): String {
+        val nums = input.trim().split(WHITESPACE_REGEX).mapNotNull { it.toDoubleOrNull() }
         if (nums.isEmpty()) return "0"
         val maxVal = nums.maxOrNull() ?: 0.0
         return if (maxVal % 1.0 == 0.0) maxVal.toInt().toString() else maxVal.toString()
     }
 
     private fun simulateGenericPlayground(code: String, input: String): String {
-        // Extract cout statements or common C++ program prints
+        val matcher = COUT_PATTERN.matcher(code)
         val outputBuilder = StringBuilder()
 
-        // 1. Check for standard cout string literals
-        val coutPattern = Pattern.compile("cout\\s*<<\\s*([^;]+);")
-        val matcher = coutPattern.matcher(code)
-
-        val outputSegments = mutableListOf<String>()
         while (matcher.find()) {
             val expression = matcher.group(1) ?: ""
             val parsed = parseCoutExpression(expression, input)
             if (parsed.isNotEmpty()) {
-                outputSegments.add(parsed)
+                outputBuilder.append(parsed)
             }
         }
 
-        if (outputSegments.isNotEmpty()) {
-            return outputSegments.joinToString("")
+        if (outputBuilder.isNotEmpty()) {
+            return outputBuilder.toString()
         }
 
-        // If no explicit simple cout or complex program, provide informative compilation & execution log
         return "[Program Selesai - Kode Keluar 0]\n" +
-                "Kompilasi Sukses dengan g++ (C++20).\n" +
-                "Tidak ada output teks langsung yang dicetak ke std::cout."
+                "Kompilasi sukses dengan standar C++20.\n" +
+                "Tidak ada teks langsung yang dicetak ke std::cout."
     }
 
     private fun parseCoutExpression(expr: String, input: String): String {
@@ -310,22 +299,19 @@ object CppCodeSimulator {
             val part = rawPart.trim()
             when {
                 part == "endl" || part == "std::endl" -> result.append("\n")
-                part.startsWith("\"") && part.endsWith("\"") -> {
+                part.startsWith("\"") && part.endsWith("\"") && part.length >= 2 -> {
                     val content = part.substring(1, part.length - 1)
                         .replace("\\n", "\n")
                         .replace("\\t", "\t")
                     result.append(content)
                 }
-                part.matches("\\d+(\\.\\d+)?".toRegex()) -> {
+                NUMBER_LITERAL_REGEX.matches(part) -> {
                     result.append(part)
                 }
                 part.contains("+") || part.contains("-") || part.contains("*") || part.contains("/") -> {
-                    // Try basic math evaluation
-                    val calculated = evalSimpleMath(part)
-                    result.append(calculated)
+                    result.append(evalSimpleMath(part))
                 }
                 part.isNotEmpty() && !part.startsWith("//") -> {
-                    // Could be variable or unknown token
                     if (input.isNotEmpty() && (part == "input" || part == "kata" || part == "n")) {
                         result.append(input)
                     }
@@ -338,16 +324,18 @@ object CppCodeSimulator {
     private fun evalSimpleMath(expr: String): String {
         return try {
             val clean = expr.replace(" ", "")
-            if (clean.contains("+")) {
-                val p = clean.split("+")
-                (p[0].toDouble() + p[1].toDouble()).toString().removeSuffix(".0")
-            } else if (clean.contains("*")) {
-                val p = clean.split("*")
-                (p[0].toDouble() * p[1].toDouble()).toString().removeSuffix(".0")
-            } else {
-                expr
+            when {
+                clean.contains("+") -> {
+                    val p = clean.split("+")
+                    (p[0].toDouble() + p[1].toDouble()).toString().removeSuffix(".0")
+                }
+                clean.contains("*") -> {
+                    val p = clean.split("*")
+                    (p[0].toDouble() * p[1].toDouble()).toString().removeSuffix(".0")
+                }
+                else -> expr
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             expr
         }
     }

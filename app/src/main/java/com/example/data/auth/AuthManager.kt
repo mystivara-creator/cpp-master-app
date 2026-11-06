@@ -2,6 +2,7 @@ package com.example.data.auth
 
 import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -20,11 +21,13 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 object AuthManager {
     private const val TAG = "AuthManager"
@@ -32,6 +35,7 @@ object AuthManager {
     private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
+    @Volatile
     private var isListenerAttached = false
 
     fun initAuth(context: Context) {
@@ -60,6 +64,12 @@ object AuthManager {
         }
     }
 
+    private tailrec fun Context.findActivity(): Activity? = when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
+
     fun onGoogleSignInClicked(
         context: Context,
         credentialManager: CredentialManager,
@@ -70,9 +80,15 @@ object AuthManager {
     ) {
         ensureFirebase(context)
 
+        val activity = context.findActivity()
+        if (activity == null) {
+            onError("Konteks layar tidak ditemukan untuk menampilkan dialog login Google.")
+            return
+        }
+
         val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
         if (resId == 0) {
-            onError("Konfigurasi Google Services belum aktif (default_web_client_id tidak ditemukan). Pastikan google-services.json tersedia.")
+            onError("Konfigurasi Google Services belum aktif (default_web_client_id tidak ditemukan).")
             return
         }
         val clientId = context.getString(resId)
@@ -82,16 +98,20 @@ object AuthManager {
 
         scope.launch {
             try {
-                val result = credentialManager.getCredential(context as Activity, request)
+                val result = credentialManager.getCredential(activity, request)
                 val credential = result.credential
                 if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
                     val authCredential = GoogleAuthProvider.getCredential(googleIdToken, null)
-                    val authResult = Firebase.auth.signInWithCredential(authCredential).await()
+                    val authResult = withContext(Dispatchers.IO) {
+                        Firebase.auth.signInWithCredential(authCredential).await()
+                    }
                     val user = authResult.user
                     if (user != null) {
                         _currentUser.value = user
-                        syncUserToFirestore(context, user)
+                        withContext(Dispatchers.IO) {
+                            syncUserToFirestore(context, user)
+                        }
                         onSuccess(user)
                     } else {
                         onError("Gagal mendapatkan akun pengguna.")
@@ -124,7 +144,9 @@ object AuthManager {
         }
         scope.launch {
             try {
-                credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                withContext(Dispatchers.IO) {
+                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                }
             } catch (e: Throwable) {
                 Log.e(TAG, "Gagal membersihkan status kredensial", e)
             } finally {

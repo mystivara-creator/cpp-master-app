@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,12 +20,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
@@ -32,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.CppCodeEditor
 import com.example.ui.components.TerminalOutputView
 import com.example.ui.viewmodel.CppViewModel
+import com.example.util.SystemIntegrationHelper
 
 data class CodeTemplate(val name: String, val code: String)
 
@@ -164,6 +173,37 @@ fun PlaygroundScreen(
     val result by viewModel.playgroundResult.collectAsState()
     val isRunning by viewModel.isPlaygroundRunning.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+
+    // Storage Access Framework launchers for saving/loading .cpp files
+    val saveCppDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) {
+            val saved = SystemIntegrationHelper.writeCodeToUri(context, uri, code)
+            SystemIntegrationHelper.saveCppFileToWorkspace(context, "main.cpp", code)
+            Toast.makeText(
+                context,
+                if (saved) "File .cpp berhasil disimpan ke penyimpanan perangkat"
+                else "Gagal menyimpan file .cpp",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val openCppDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            val loadedCode = SystemIntegrationHelper.readCodeFromUri(context, uri)
+            if (!loadedCode.isNullOrBlank()) {
+                viewModel.updatePlaygroundCode(loadedCode)
+                Toast.makeText(context, "File .cpp berhasil dimuat", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "File kosong atau tidak dapat dibaca", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -188,7 +228,7 @@ fun PlaygroundScreen(
                         color = colorScheme.onSurface
                     )
                     Text(
-                        text = "Eksperimen kode & algoritma secara langsung",
+                        text = "Eksperimen kode & kelola berkas .cpp",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -225,11 +265,56 @@ fun PlaygroundScreen(
         // Templates Row with Material 3 SuggestionChip
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = "Template Kode",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Template Kode",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                openCppDocumentLauncher.launch(arrayOf("text/*", "application/octet-stream"))
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .height(32.dp)
+                                .testTag("open_cpp_file_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FolderOpen,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("Buka .cpp", style = MaterialTheme.typography.labelSmall)
+                        }
+
+                        FilledTonalButton(
+                            onClick = {
+                                SystemIntegrationHelper.saveCppFileToWorkspace(context, "main.cpp", code)
+                                saveCppDocumentLauncher.launch("main.cpp")
+                            },
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier
+                                .height(32.dp)
+                                .testTag("save_cpp_file_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("Simpan .cpp", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
 
                 Row(
                     modifier = Modifier

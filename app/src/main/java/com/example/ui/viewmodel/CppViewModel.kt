@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.CppCodeSimulator
@@ -13,7 +14,9 @@ import com.example.data.model.CourseLevel
 import com.example.data.model.Lesson
 import com.example.data.model.QuizQuestion
 import com.example.data.model.UserProfile
+import com.example.util.SystemIntegrationHelper
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +50,23 @@ data class QuizSessionState(
 
 class CppViewModel(application: Application) : AndroidViewModel(application) {
     val repository = CppRepository(application)
+
+    private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    // Startup Loading & First-Install Onboarding State
+    private val _isAppInitializing = MutableStateFlow(true)
+    val isAppInitializing: StateFlow<Boolean> = _isAppInitializing.asStateFlow()
+
+    private val _startupProgress = MutableStateFlow(0.25f)
+    val startupProgress: StateFlow<Float> = _startupProgress.asStateFlow()
+
+    private val _startupStatusText = MutableStateFlow("Menyiapkan kurikulum C++20...")
+    val startupStatusText: StateFlow<String> = _startupStatusText.asStateFlow()
+
+    private val _hasCompletedOnboarding = MutableStateFlow(
+        prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    )
+    val hasCompletedOnboarding: StateFlow<Boolean> = _hasCompletedOnboarding.asStateFlow()
 
     // Current Navigation Screen
     private val _currentScreen = MutableStateFlow<ScreenDestination>(ScreenDestination.Learn)
@@ -130,6 +150,33 @@ int main() {
         val today = repository.getTodayChallenge()
         _currentDay.value = today.dayNumber
         _challengeCode.value = today.starterCode
+
+        viewModelScope.launch {
+            _startupProgress.value = 0.35f
+            _startupStatusText.value = "Menyiapkan database & ruang kerja C++..."
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    repository.ensureProfileInitialized()
+                    SystemIntegrationHelper.getWorkspaceDirectory(getApplication())
+                }
+            }
+            _startupProgress.value = 0.75f
+            _startupStatusText.value = "Memuat modul & simulator C++20..."
+            delay(280L)
+            _startupProgress.value = 1.0f
+            _startupStatusText.value = "Siap digunakan"
+            delay(120L)
+            _isAppInitializing.value = false
+        }
+    }
+
+    fun completeOnboarding() {
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, true).apply()
+        _hasCompletedOnboarding.value = true
+    }
+
+    fun reopenOnboarding() {
+        _hasCompletedOnboarding.value = false
     }
 
     // Navigation
@@ -223,6 +270,11 @@ int main() {
                         passedCases = challenge.testCases.size,
                         totalCases = challenge.testCases.size
                     )
+                    SystemIntegrationHelper.saveCppFileToWorkspace(
+                        getApplication(),
+                        "challenge_day_${challenge.dayNumber}.cpp",
+                        code
+                    )
                 }
             }
         }
@@ -315,6 +367,13 @@ int main() {
             }
             _playgroundResult.value = result
             _isPlaygroundRunning.value = false
+            withContext(Dispatchers.IO) {
+                SystemIntegrationHelper.saveCppFileToWorkspace(
+                    getApplication(),
+                    "playground_latest.cpp",
+                    code
+                )
+            }
         }
     }
 
@@ -327,5 +386,10 @@ int main() {
         viewModelScope.launch(Dispatchers.IO) {
             repository.resetAllData()
         }
+    }
+
+    companion object {
+        const val PREFS_NAME = "cpp_master_prefs"
+        const val KEY_ONBOARDING_COMPLETED = "has_completed_onboarding"
     }
 }

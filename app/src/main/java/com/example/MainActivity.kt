@@ -34,9 +34,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.ui.screens.AppStartupLoadingScreen
 import com.example.ui.screens.DailyChallengeScreen
 import com.example.ui.screens.LearnScreen
 import com.example.ui.screens.LessonDetailScreen
+import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.PlaygroundScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.QuizScreen
@@ -65,8 +67,35 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
-                MainAppScreen(viewModel = viewModel)
+                MainAppRoot(viewModel = viewModel)
             }
+        }
+    }
+}
+
+@Composable
+fun MainAppRoot(viewModel: CppViewModel) {
+    val isInitializing by viewModel.isAppInitializing.collectAsState()
+    val startupProgress by viewModel.startupProgress.collectAsState()
+    val startupStatusText by viewModel.startupStatusText.collectAsState()
+    val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState()
+
+    when {
+        isInitializing -> {
+            AppStartupLoadingScreen(
+                progress = startupProgress,
+                statusMessage = startupStatusText
+            )
+        }
+        !hasCompletedOnboarding -> {
+            OnboardingScreen(
+                onFinishOnboarding = {
+                    viewModel.completeOnboarding()
+                }
+            )
+        }
+        else -> {
+            MainAppScreen(viewModel = viewModel)
         }
     }
 }
