@@ -1,129 +1,79 @@
 package com.example.ui.components
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.example.ui.theme.CppCodeComment
-import com.example.ui.theme.CppCodeKeyword
-import com.example.ui.theme.CppCodeNumber
-import com.example.ui.theme.CppCodeString
-import com.example.ui.theme.CppCodeType
-import com.example.ui.theme.TextPrimary
-import java.util.regex.Pattern
 
 object CppSyntaxHighlighter {
-
-    private val KEYWORDS = setOf(
-        "if", "else", "switch", "case", "default", "for", "while", "do",
-        "break", "continue", "return", "class", "struct", "enum", "public",
-        "private", "protected", "virtual", "override", "template", "typename",
-        "namespace", "using", "friend", "delete", "new", "try", "catch", "throw",
-        "const", "constexpr", "static", "auto", "nullptr", "true", "false", "sizeof"
+    private val preprocessorRegex = Regex("(#include\\s*[<\"][^>\"]*[>\"]|#define\\s+\\w+|#pragma\\s+\\w+)")
+    private val keywordRegex = Regex(
+        "\\b(int|long|short|float|double|char|bool|void|auto|const|constexpr|static|struct|class|public|private|protected|virtual|override|template|typename|namespace|using|return|if|else|switch|case|default|for|while|do|break|continue|new|delete|nullptr|true|false|try|catch|throw|sizeof)\\b"
     )
-
-    private val TYPES = setOf(
-        "int", "double", "float", "char", "bool", "void", "long", "short",
-        "unsigned", "std::string", "std::vector", "std::map", "std::set",
-        "std::unique_ptr", "std::shared_ptr", "std::weak_ptr", "std::cout",
-        "std::cin", "std::endl", "string", "vector", "map", "set", "size_t"
+    private val stdLibRegex = Regex(
+        "\\b(std|cout|cin|endl|string|vector|map|unordered_map|set|pair|unique_ptr|shared_ptr|make_unique|make_shared|sort|find|push_back|size|empty|begin|end|getline)\\b"
     )
+    private val numberRegex = Regex("\\b\\d+(\\.\\d+)?f?\\b")
+    private val stringRegex = Regex("\"([^\"\\\\]|\\\\.)*\"|'([^'\\\\]|\\\\.)*'")
+    private val commentRegex = Regex("//.*|/\\*[\\s\\S]*?\\*/")
 
-    // Pre-compile regular expressions once to avoid runtime lag
-    private val COMMENT_PATTERN = Pattern.compile("(//[^\n]*|/\\*[\\s\\S]*?\\*/)")
-    private val PREP_PATTERN = Pattern.compile("#\\w+(\\s*<[^>]+>|\\s*\"[^\"]+\")?")
-    private val STRING_PATTERN = Pattern.compile("\"(\\\\.|[^\"])*\"")
-    private val CHAR_PATTERN = Pattern.compile("'(\\\\.|[^'])*'")
-    private val NUM_PATTERN = Pattern.compile("\\b\\d+(\\.\\d+)?f?\\b")
-    private val WORD_PATTERN = Pattern.compile("\\b[a-zA-Z_][a-zA-Z0-9_]*(::[a-zA-Z_][a-zA-Z0-9_]*)?\\b")
-
-    fun highlightCppCode(code: String): AnnotatedString {
-        if (code.isEmpty()) return AnnotatedString("")
-
+    fun highlightCppCode(
+        code: String,
+        baseTextColor: Color = Color(0xFFE3E2E6),
+        keywordColor: Color = Color(0xFF0B57D0),
+        commentColor: Color = Color(0xFF74777F)
+    ): AnnotatedString {
         return buildAnnotatedString {
             append(code)
+            addStyle(SpanStyle(color = baseTextColor), 0, code.length)
 
-            // Base style
-            addStyle(
-                SpanStyle(
-                    color = TextPrimary,
-                    fontFamily = FontFamily.Monospace
-                ),
-                0,
-                code.length
-            )
-
-            // 1. Comments
-            val commentMatcher = COMMENT_PATTERN.matcher(code)
-            while (commentMatcher.find()) {
+            keywordRegex.findAll(code).forEach { match ->
                 addStyle(
-                    SpanStyle(color = CppCodeComment),
-                    commentMatcher.start(),
-                    commentMatcher.end()
+                    SpanStyle(color = keywordColor, fontWeight = FontWeight.SemiBold),
+                    match.range.first,
+                    match.range.last + 1
                 )
             }
 
-            // 2. Preprocessor
-            val prepMatcher = PREP_PATTERN.matcher(code)
-            while (prepMatcher.find()) {
+            stdLibRegex.findAll(code).forEach { match ->
                 addStyle(
-                    SpanStyle(color = CppCodeKeyword, fontWeight = FontWeight.Bold),
-                    prepMatcher.start(),
-                    prepMatcher.end()
+                    SpanStyle(color = keywordColor.copy(alpha = 0.85f), fontWeight = FontWeight.Medium),
+                    match.range.first,
+                    match.range.last + 1
                 )
             }
 
-            // 3. String literals
-            val stringMatcher = STRING_PATTERN.matcher(code)
-            while (stringMatcher.find()) {
+            numberRegex.findAll(code).forEach { match ->
                 addStyle(
-                    SpanStyle(color = CppCodeString),
-                    stringMatcher.start(),
-                    stringMatcher.end()
+                    SpanStyle(color = baseTextColor, fontWeight = FontWeight.Medium),
+                    match.range.first,
+                    match.range.last + 1
                 )
             }
 
-            // 4. Character literals
-            val charMatcher = CHAR_PATTERN.matcher(code)
-            while (charMatcher.find()) {
+            preprocessorRegex.findAll(code).forEach { match ->
                 addStyle(
-                    SpanStyle(color = CppCodeString),
-                    charMatcher.start(),
-                    charMatcher.end()
+                    SpanStyle(color = keywordColor, fontWeight = FontWeight.Medium),
+                    match.range.first,
+                    match.range.last + 1
                 )
             }
 
-            // 5. Numbers
-            val numMatcher = NUM_PATTERN.matcher(code)
-            while (numMatcher.find()) {
+            stringRegex.findAll(code).forEach { match ->
                 addStyle(
-                    SpanStyle(color = CppCodeNumber),
-                    numMatcher.start(),
-                    numMatcher.end()
+                    SpanStyle(color = baseTextColor.copy(alpha = 0.9f)),
+                    match.range.first,
+                    match.range.last + 1
                 )
             }
 
-            // 6. Keywords & Types
-            val wordMatcher = WORD_PATTERN.matcher(code)
-            while (wordMatcher.find()) {
-                val word = wordMatcher.group()
-                when {
-                    KEYWORDS.contains(word) -> {
-                        addStyle(
-                            SpanStyle(color = CppCodeKeyword, fontWeight = FontWeight.SemiBold),
-                            wordMatcher.start(),
-                            wordMatcher.end()
-                        )
-                    }
-                    TYPES.contains(word) -> {
-                        addStyle(
-                            SpanStyle(color = CppCodeType, fontWeight = FontWeight.Medium),
-                            wordMatcher.start(),
-                            wordMatcher.end()
-                        )
-                    }
-                }
+            commentRegex.findAll(code).forEach { match ->
+                addStyle(
+                    SpanStyle(color = commentColor),
+                    match.range.first,
+                    match.range.last + 1
+                )
             }
         }
     }

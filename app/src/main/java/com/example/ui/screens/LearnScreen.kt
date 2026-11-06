@@ -14,23 +14,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,18 +40,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.model.CourseLevel
 import com.example.ui.components.LessonCard
 import com.example.ui.components.LevelProgressCard
 import com.example.ui.components.StreakBannerCard
-import com.example.ui.theme.CppBluePrimary
-import com.example.ui.theme.CppNavyBorder
-import com.example.ui.theme.CppNavyCard
-import com.example.ui.theme.CppNavyDark
-import com.example.ui.theme.CppNavySurface
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 import com.example.ui.viewmodel.CppViewModel
 import com.example.ui.viewmodel.ScreenDestination
 
@@ -68,6 +57,7 @@ fun LearnScreen(
     val lessonProgress by viewModel.lessonProgress.collectAsState()
     val selectedLevel by viewModel.selectedCourseLevel.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
 
     val lessonsForLevel = remember(selectedLevel) {
         viewModel.repository.getLessonsByLevel(selectedLevel)
@@ -87,12 +77,12 @@ fun LearnScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorScheme.background)
             .testTag("learn_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // App Header
+        // Minimalist Google-style Header
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -102,36 +92,81 @@ fun LearnScreen(
                 Column {
                     Text(
                         text = "C++ Master",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = CppBluePrimary,
-                            letterSpacing = 0.5.sp
-                        )
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.onSurface
                     )
                     Text(
-                        text = "Kuasai C++ dari dasar hingga mahir",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+                        text = "Kurikulum pemrograman C++ modern",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
 
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CppNavyCard),
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(colorScheme.secondaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.School,
-                        contentDescription = "Belajar",
-                        tint = CppBluePrimary,
-                        modifier = Modifier.size(24.dp)
+                        imageVector = Icons.Default.Code,
+                        contentDescription = "C++ Master",
+                        tint = colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
         }
 
-        // Streak Banner & Progress
+        // Google-style pill Search Bar
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.setSearchQuery(it) },
+                placeholder = {
+                    Text(
+                        text = "Cari materi atau konsep C++",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Cari",
+                        tint = colorScheme.onSurfaceVariant
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Hapus",
+                                tint = colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(28.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = colorScheme.surfaceContainerLow,
+                    focusedBorderColor = colorScheme.primary,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedTextColor = colorScheme.onSurface,
+                    unfocusedTextColor = colorScheme.onSurface
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("search_lessons_field")
+            )
+        }
+
+        // Streak & Level Progress
         item {
             StreakBannerCard(
                 streakDays = userProfile.currentStreak,
@@ -143,63 +178,26 @@ fun LearnScreen(
             LevelProgressCard(userProfile = userProfile)
         }
 
-        // Search Bar
-        item {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                placeholder = { Text("Cari materi, konsep, atau sintaks C++...", color = TextSecondary) },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = "Cari", tint = TextSecondary)
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = TextSecondary)
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CppBluePrimary,
-                    unfocusedBorderColor = CppNavyBorder,
-                    focusedContainerColor = CppNavySurface,
-                    unfocusedContainerColor = CppNavySurface,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("search_lessons_field")
-            )
-        }
-
-        // Level Tabs (Only when not searching)
+        // Material 3 PrimaryTabRow
         if (searchQuery.isBlank()) {
             item {
-                TabRow(
+                PrimaryTabRow(
                     selectedTabIndex = selectedLevel.ordinal,
-                    containerColor = CppNavySurface,
-                    contentColor = CppBluePrimary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedLevel.ordinal]),
-                            color = CppBluePrimary,
-                            height = 3.dp
-                        )
-                    },
+                    containerColor = colorScheme.surfaceContainerLow,
+                    contentColor = colorScheme.primary,
                     modifier = Modifier.clip(RoundedCornerShape(12.dp))
                 ) {
-                    CourseLevel.values().forEach { level ->
+                    CourseLevel.entries.forEach { level ->
+                        val isSelected = selectedLevel == level
                         Tab(
-                            selected = selectedLevel == level,
+                            selected = isSelected,
                             onClick = { viewModel.setCourseLevel(level) },
                             text = {
                                 Text(
                                     text = level.label,
-                                    fontWeight = if (selectedLevel == level) FontWeight.Bold else FontWeight.Medium,
-                                    fontSize = 13.sp
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSelected) colorScheme.primary else colorScheme.onSurfaceVariant
                                 )
                             },
                             modifier = Modifier.testTag("tab_${level.name}")
@@ -209,7 +207,7 @@ fun LearnScreen(
             }
         }
 
-        // Section Title
+        // Section Header
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -218,20 +216,17 @@ fun LearnScreen(
             ) {
                 Text(
                     text = if (searchQuery.isNotBlank()) "Hasil Pencarian (${filteredLessons.size})"
-                    else "Daftar Materi: ${selectedLevel.label}",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
+                    else "Materi ${selectedLevel.label}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.onSurface
                 )
 
                 val completedInLevel = filteredLessons.count { lessonProgress[it.id]?.isCompleted == true }
                 Text(
-                    text = "$completedInLevel / ${filteredLessons.size} Tuntas",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        color = CppBluePrimary,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    text = "$completedInLevel / ${filteredLessons.size} selesai",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -246,8 +241,9 @@ fun LearnScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Tidak ada materi yang cocok dengan '$searchQuery'",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+                        text = "Tidak ada materi untuk '$searchQuery'",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -272,7 +268,7 @@ fun LearnScreen(
         }
 
         item {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

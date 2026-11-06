@@ -1,8 +1,7 @@
 package com.example.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,77 +11,58 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.data.model.CourseLevel
-import com.example.data.model.Lesson
-import com.example.data.model.UserProfile
-import com.example.ui.theme.CppAmberWarning
-import com.example.ui.theme.CppBluePrimary
-import com.example.ui.theme.CppCodeBackground
-import com.example.ui.theme.CppEmeraldTertiary
-import com.example.ui.theme.CppNavyBorder
-import com.example.ui.theme.CppNavyCard
-import com.example.ui.theme.CppNavySurface
-import com.example.ui.theme.CppRoseError
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 
 @Composable
 fun LessonCard(
-    lesson: Lesson,
+    lesson: com.example.data.model.Lesson,
     isCompleted: Boolean,
     isBookmarked: Boolean,
     onClick: () -> Unit,
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val colorScheme = MaterialTheme.colorScheme
+
+    OutlinedCard(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .testTag("lesson_card_${lesson.id}"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CppNavySurface),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.horizontalGradient(
-                listOf(
-                    if (isCompleted) CppEmeraldTertiary.copy(alpha = 0.4f) else CppNavyBorder,
-                    CppNavyBorder
-                )
-            )
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isCompleted) colorScheme.primary.copy(alpha = 0.45f) else colorScheme.outlineVariant
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -91,7 +71,6 @@ fun LessonCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Lesson Order & Level Tag
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -101,8 +80,8 @@ fun LessonCard(
                             .size(28.dp)
                             .clip(CircleShape)
                             .background(
-                                if (isCompleted) CppEmeraldTertiary.copy(alpha = 0.2f)
-                                else CppBluePrimary.copy(alpha = 0.15f)
+                                if (isCompleted) colorScheme.primaryContainer
+                                else colorScheme.secondaryContainer
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -110,43 +89,43 @@ fun LessonCard(
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = "Selesai",
-                                tint = CppEmeraldTertiary,
-                                modifier = Modifier.size(18.dp)
+                                tint = colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(16.dp)
                             )
                         } else {
                             Text(
                                 text = "${lesson.order}",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = CppBluePrimary
-                                )
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSecondaryContainer
                             )
                         }
                     }
 
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(lesson.level.badgeColor).copy(alpha = 0.15f)
+                        color = colorScheme.surfaceContainerHigh
                     ) {
                         Text(
                             text = lesson.level.label,
-                            color = Color(lesson.level.badgeColor),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
 
-                // Bookmark Icon
                 IconButton(
                     onClick = onToggleBookmark,
-                    modifier = Modifier.size(36.dp).testTag("bookmark_btn_${lesson.id}")
+                    modifier = Modifier
+                        .size(36.dp)
+                        .testTag("bookmark_btn_${lesson.id}")
                 ) {
                     Icon(
                         imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                         contentDescription = "Simpan Pelajaran",
-                        tint = if (isBookmarked) CppAmberWarning else TextSecondary,
+                        tint = if (isBookmarked) colorScheme.primary else colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -156,10 +135,9 @@ fun LessonCard(
 
             Text(
                 text = lesson.title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                ),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -168,10 +146,8 @@ fun LessonCard(
 
             Text(
                 text = lesson.subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = TextSecondary,
-                    lineHeight = 18.sp
-                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -185,31 +161,32 @@ fun LessonCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
-                        tint = TextSecondary,
+                        tint = colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
                         text = "${lesson.estimatedMinutes} menit baca",
-                        style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
 
                 if (isCompleted) {
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = CppEmeraldTertiary.copy(alpha = 0.15f)
+                        color = colorScheme.primaryContainer
                     ) {
                         Text(
-                            text = "Tuntas ✓",
-                            color = CppEmeraldTertiary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            text = "Selesai",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -220,15 +197,20 @@ fun LessonCard(
 
 @Composable
 fun LevelProgressCard(
-    userProfile: UserProfile,
+    userProfile: com.example.data.model.UserProfile,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val colorScheme = MaterialTheme.colorScheme
+
+    OutlinedCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("user_progress_card"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CppNavyCard)
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -239,51 +221,45 @@ fun LevelProgressCard(
                 Column {
                     Text(
                         text = "Level ${userProfile.currentLevelNumber + 1}",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = CppBluePrimary,
-                            fontWeight = FontWeight.Bold
-                        )
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colorScheme.primary,
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = userProfile.levelTitle,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.onSurface
                     )
                 }
 
-                // XP Badge
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = CppBluePrimary.copy(alpha = 0.15f)
+                    shape = RoundedCornerShape(20.dp),
+                    color = colorScheme.secondaryContainer
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.WorkspacePremium,
                             contentDescription = null,
-                            tint = CppBluePrimary,
+                            tint = colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = "${userProfile.totalXp} XP",
-                            style = TextStyle(
-                                fontWeight = FontWeight.Bold,
-                                color = CppBluePrimary,
-                                fontSize = 13.sp
-                            )
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colorScheme.onSecondaryContainer
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Progress bar
             val progress = remember(userProfile.totalXp, userProfile.nextLevelXp) {
                 if (userProfile.nextLevelXp > 0) {
                     (userProfile.totalXp.toFloat() / userProfile.nextLevelXp.toFloat()).coerceIn(0f, 1f)
@@ -294,13 +270,13 @@ fun LevelProgressCard(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = CppBluePrimary,
-                trackColor = CppNavyBorder
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = colorScheme.primary,
+                trackColor = colorScheme.surfaceContainerHighest
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -308,11 +284,13 @@ fun LevelProgressCard(
             ) {
                 Text(
                     text = "${userProfile.totalXp} / ${userProfile.nextLevelXp} XP",
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Menuju level berikutnya",
-                    style = MaterialTheme.typography.labelSmall.copy(color = TextSecondary)
+                    text = "Progres level",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -325,52 +303,50 @@ fun StreakBannerCard(
     bestStreak: Int,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val colorScheme = MaterialTheme.colorScheme
+
+    OutlinedCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("streak_banner_card"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1735)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.horizontalGradient(
-                listOf(CppAmberWarning.copy(alpha = 0.6f), Color(0xFF8B5CF6).copy(alpha = 0.4f))
-            )
-        )
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
-                    .background(CppAmberWarning.copy(alpha = 0.2f)),
+                    .background(colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.LocalFireDepartment,
-                    contentDescription = "Streak Api",
-                    tint = CppAmberWarning,
-                    modifier = Modifier.size(30.dp)
+                    contentDescription = "Streak Aktif",
+                    tint = colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "$streakDays Hari Beruntun! 🔥",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFEF08A)
-                    )
+                    text = "$streakDays Hari Beruntun",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Selesaikan tantangan koding hari ini untuk menjaga rekor streak aktifmu. (Terbaik: $bestStreak hari)",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = Color(0xFFE2E8F0),
-                        lineHeight = 16.sp
-                    )
+                    text = "Pertahankan latihan harian C++ kamu. Rekor terbaik: $bestStreak hari.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -381,50 +357,49 @@ fun StreakBannerCard(
 fun StatCard(
     title: String,
     value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
+    icon: ImageVector,
+    color: Color = Color.Unspecified,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val colorScheme = MaterialTheme.colorScheme
+
+    OutlinedCard(
         modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CppNavySurface),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(CppNavyBorder)
-        )
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant)
     ) {
         Column(
-            modifier = Modifier.padding(14.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(color.copy(alpha = 0.15f)),
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(20.dp)
+                    tint = colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(18.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = TextSecondary,
-                    fontSize = 11.sp
-                )
+                style = MaterialTheme.typography.bodySmall,
+                color = colorScheme.onSurfaceVariant
             )
         }
     }

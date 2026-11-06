@@ -10,16 +10,17 @@ import com.example.data.ExecutionResult
 import com.example.data.local.entity.DailyChallengeRecordEntity
 import com.example.data.local.entity.LessonProgressEntity
 import com.example.data.model.CourseLevel
-import com.example.data.model.DailyChallenge
 import com.example.data.model.Lesson
 import com.example.data.model.QuizQuestion
 import com.example.data.model.UserProfile
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class ScreenDestination {
     object Learn : ScreenDestination()
@@ -122,8 +123,10 @@ int main() {
     private val _playgroundResult = MutableStateFlow<ExecutionResult?>(null)
     val playgroundResult: StateFlow<ExecutionResult?> = _playgroundResult.asStateFlow()
 
+    private val _isPlaygroundRunning = MutableStateFlow(false)
+    val isPlaygroundRunning: StateFlow<Boolean> = _isPlaygroundRunning.asStateFlow()
+
     init {
-        // Initialize today's challenge
         val today = repository.getTodayChallenge()
         _currentDay.value = today.dayNumber
         _challengeCode.value = today.starterCode
@@ -135,7 +138,7 @@ int main() {
     }
 
     fun navigateBack(): Boolean {
-        return when (val current = _currentScreen.value) {
+        return when (_currentScreen.value) {
             is ScreenDestination.LessonDetail -> {
                 _currentScreen.value = ScreenDestination.Learn
                 true
@@ -165,13 +168,13 @@ int main() {
     }
 
     fun markLessonCompleted(lessonId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.markLessonCompleted(lessonId)
         }
     }
 
     fun toggleLessonBookmark(lessonId: String, currentBookmarked: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.toggleBookmark(lessonId, currentBookmarked)
         }
     }
@@ -205,18 +208,22 @@ int main() {
         _isChallengeRunning.value = true
 
         viewModelScope.launch {
-            val result = CppCodeSimulator.evaluateChallenge(challenge, code)
+            val result = withContext(Dispatchers.Default) {
+                CppCodeSimulator.evaluateChallenge(challenge, code)
+            }
             _challengeResult.value = result
             _isChallengeRunning.value = false
 
             if (result.isSuccess) {
-                repository.saveChallengeSubmission(
-                    challenge = challenge,
-                    code = code,
-                    isPassed = true,
-                    passedCases = challenge.testCases.size,
-                    totalCases = challenge.testCases.size
-                )
+                withContext(Dispatchers.IO) {
+                    repository.saveChallengeSubmission(
+                        challenge = challenge,
+                        code = code,
+                        isPassed = true,
+                        passedCases = challenge.testCases.size,
+                        totalCases = challenge.testCases.size
+                    )
+                }
             }
         }
     }
@@ -282,9 +289,8 @@ int main() {
                 isAnswerConfirmed = false
             )
         } else {
-            // Quiz completed
             _quizSession.value = current.copy(isCompleted = true)
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 repository.recordQuizCompletion(current.correctCount, current.questions.size)
             }
         }
@@ -302,9 +308,13 @@ int main() {
     fun runPlayground() {
         val code = _playgroundCode.value
         val input = _playgroundInput.value
+        _isPlaygroundRunning.value = true
         viewModelScope.launch {
-            val result = CppCodeSimulator.runPlayground(code, input)
+            val result = withContext(Dispatchers.Default) {
+                CppCodeSimulator.runPlayground(code, input)
+            }
             _playgroundResult.value = result
+            _isPlaygroundRunning.value = false
         }
     }
 
@@ -314,7 +324,7 @@ int main() {
     }
 
     fun resetData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.resetAllData()
         }
     }

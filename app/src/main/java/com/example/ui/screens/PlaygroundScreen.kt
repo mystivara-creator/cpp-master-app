@@ -20,13 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,21 +32,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.ui.components.CppCodeEditor
 import com.example.ui.components.TerminalOutputView
-import com.example.ui.theme.CppBluePrimary
-import com.example.ui.theme.CppNavyBorder
-import com.example.ui.theme.CppNavyCard
-import com.example.ui.theme.CppNavyDark
-import com.example.ui.theme.CppNavySurface
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 import com.example.ui.viewmodel.CppViewModel
 
 data class CodeTemplate(val name: String, val code: String)
@@ -173,16 +162,18 @@ fun PlaygroundScreen(
     val code by viewModel.playgroundCode.collectAsState()
     val input by viewModel.playgroundInput.collectAsState()
     val result by viewModel.playgroundResult.collectAsState()
+    val isRunning by viewModel.isPlaygroundRunning.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorScheme.background)
             .testTag("playground_screen"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
+        // Minimalist Header
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -192,38 +183,38 @@ fun PlaygroundScreen(
                 Column {
                     Text(
                         text = "Playground C++",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = CppBluePrimary
-                        )
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.onSurface
                     )
                     Text(
-                        text = "Tulis kode bebas, coba template, & jalankan",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondary)
+                        text = "Eksperimen kode & algoritma secara langsung",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = CppNavyCard
+                    shape = RoundedCornerShape(10.dp),
+                    color = colorScheme.secondaryContainer
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Terminal,
                             contentDescription = null,
-                            tint = CppBluePrimary,
+                            tint = colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "g++ C++20",
+                            text = "C++20",
                             style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = CppBluePrimary,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSecondaryContainer
                             )
                         )
                     }
@@ -231,15 +222,13 @@ fun PlaygroundScreen(
             }
         }
 
-        // Templates Row
+        // Templates Row with Material 3 SuggestionChip
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "Pilih Template Cepat:",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextSecondary
-                    )
+                    text = "Template Kode",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colorScheme.onSurfaceVariant
                 )
 
                 Row(
@@ -249,22 +238,15 @@ fun PlaygroundScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TEMPLATES.forEach { tmpl ->
-                        Surface(
+                        SuggestionChip(
                             onClick = { viewModel.loadPlaygroundTemplate(tmpl.name, tmpl.code) },
-                            shape = RoundedCornerShape(10.dp),
-                            color = CppNavySurface,
-                            border = CardDefaults.outlinedCardBorder().copy(
-                                brush = androidx.compose.ui.graphics.SolidColor(CppNavyBorder)
-                            )
-                        ) {
-                            Text(
-                                text = tmpl.name,
-                                color = TextPrimary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            )
-                        }
+                            label = {
+                                Text(
+                                    text = tmpl.name,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                        )
                     }
                 }
             }
@@ -275,7 +257,7 @@ fun PlaygroundScreen(
             CppCodeEditor(
                 code = code,
                 onCodeChange = { viewModel.updatePlaygroundCode(it) },
-                title = "playground_main.cpp",
+                title = "main.cpp",
                 minHeight = 220,
                 maxHeight = 360,
                 onReset = {
@@ -284,24 +266,18 @@ fun PlaygroundScreen(
             )
         }
 
-        // Optional Standard Input Field
+        // Standard Input Field
         item {
             OutlinedTextField(
                 value = input,
                 onValueChange = { viewModel.updatePlaygroundInput(it) },
-                label = { Text("Masukan Standar (std::cin) - Opsional", color = TextSecondary, fontSize = 12.sp) },
-                placeholder = { Text("Contoh masukan jika program menggunakan cin...", color = TextSecondary.copy(alpha = 0.5f)) },
+                label = { Text("Masukan Standar (std::cin) — Opsional") },
+                placeholder = { Text("Masukkan nilai input jika kode menggunakan std::cin") },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CppBluePrimary,
-                    unfocusedBorderColor = CppNavyBorder,
-                    focusedContainerColor = CppNavySurface,
-                    unfocusedContainerColor = CppNavySurface,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                modifier = Modifier.fillMaxWidth().testTag("playground_input_field")
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("playground_input_field")
             )
         }
 
@@ -309,24 +285,33 @@ fun PlaygroundScreen(
         item {
             Button(
                 onClick = { viewModel.runPlayground() },
+                enabled = !isRunning,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(48.dp)
                     .testTag("run_playground_btn"),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CppBluePrimary)
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = Color(0xFF0F172A)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Jalankan Program C++ (Run)",
-                    color = Color(0xFF0F172A),
-                    fontWeight = FontWeight.Bold
-                )
+                if (isRunning) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Menjalankan...", style = MaterialTheme.typography.labelLarge)
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Jalankan Program",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
         }
 
@@ -340,7 +325,7 @@ fun PlaygroundScreen(
         }
 
         item {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

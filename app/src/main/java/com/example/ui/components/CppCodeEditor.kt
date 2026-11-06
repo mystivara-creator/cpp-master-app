@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,19 +19,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -41,20 +44,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.CppBluePrimary
-import com.example.ui.theme.CppCodeBackground
-import com.example.ui.theme.CppCodeLineNumber
-import com.example.ui.theme.CppNavyBorder
-import com.example.ui.theme.CppNavyCard
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
 
 @Composable
 fun CppCodeEditor(
     code: String,
     onCodeChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Editor C++ (main.cpp)",
+    title: String = "main.cpp",
     readOnly: Boolean = false,
     minHeight: Int = 180,
     maxHeight: Int = 400,
@@ -63,6 +59,7 @@ fun CppCodeEditor(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val horizontalScrollState = rememberScrollState()
+    val colorScheme = MaterialTheme.colorScheme
 
     val lineCount = remember(code) {
         maxOf(1, code.count { it == '\n' } + 1)
@@ -72,136 +69,152 @@ fun CppCodeEditor(
         (1..lineCount).joinToString("\n")
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(CppCodeBackground)
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = colorScheme.surfaceContainerLow
+        ),
+        border = BorderStroke(1.dp, colorScheme.outlineVariant)
     ) {
-        // Top Bar (Terminal Window style)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(CppNavyCard)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Minimalist Google-style Code Header
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colorScheme.surfaceContainer)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Window dots
-                Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFFEF4444)))
-                Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFFF59E0B)))
-                Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(Color(0xFF10B981)))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = title,
-                    style = TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextSecondary
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Code,
+                        contentDescription = null,
+                        tint = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
                     )
-                )
-            }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onReset != null && !readOnly) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onReset != null && !readOnly) {
+                        IconButton(
+                            onClick = onReset,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .testTag("editor_reset_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RestartAlt,
+                                contentDescription = "Reset Kode",
+                                tint = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                     IconButton(
-                        onClick = onReset,
-                        modifier = Modifier.size(32.dp).testTag("editor_reset_btn")
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(code))
+                            Toast.makeText(context, "Kode disalin ke clipboard", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("editor_copy_btn")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.RestartAlt,
-                            contentDescription = "Reset Kode",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(16.dp)
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Salin Kode",
+                            tint = colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(15.dp)
                         )
                     }
                 }
-                IconButton(
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(code))
-                        Toast.makeText(context, "Kode disalin ke clipboard", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.size(32.dp).testTag("editor_copy_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Salin Kode",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
-        }
 
-        // Code Body with Line Numbers
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = minHeight.dp, max = maxHeight.dp)
-                .padding(8.dp)
-        ) {
-            // Line numbers column
-            Text(
-                text = lineNumbersText,
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 13.sp,
-                    lineHeight = 20.sp,
-                    color = CppCodeLineNumber,
-                    fontWeight = FontWeight.Normal
-                ),
-                modifier = Modifier
-                    .width(36.dp)
-                    .padding(end = 8.dp)
-            )
+            HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.6f))
 
-            // Code text or editor
-            Box(
+            // Code Body with Line Numbers
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .horizontalScroll(horizontalScrollState)
+                    .fillMaxWidth()
+                    .heightIn(min = minHeight.dp, max = maxHeight.dp)
+                    .padding(12.dp)
             ) {
-                if (readOnly) {
-                    val highlightedCode = remember(code) { CppSyntaxHighlighter.highlightCppCode(code) }
-                    Text(
-                        text = highlightedCode,
-                        style = TextStyle(
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 13.sp,
-                            lineHeight = 20.sp
+                Text(
+                    text = lineNumbersText,
+                    style = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 13.sp,
+                        lineHeight = 20.sp,
+                        color = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Normal
+                    ),
+                    modifier = Modifier
+                        .width(32.dp)
+                        .padding(end = 8.dp)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .horizontalScroll(horizontalScrollState)
+                ) {
+                    if (readOnly) {
+                        val highlightedCode = remember(code, colorScheme.onSurface, colorScheme.primary) {
+                            CppSyntaxHighlighter.highlightCppCode(
+                                code = code,
+                                baseTextColor = colorScheme.onSurface,
+                                keywordColor = colorScheme.primary,
+                                commentColor = colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = highlightedCode,
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 13.sp,
+                                lineHeight = 20.sp,
+                                color = colorScheme.onSurface
+                            )
                         )
-                    )
-                } else {
-                    BasicTextField(
-                        value = code,
-                        onValueChange = onCodeChange,
-                        textStyle = TextStyle(
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 13.sp,
-                            lineHeight = 20.sp,
-                            color = TextPrimary
-                        ),
-                        cursorBrush = SolidColor(CppBluePrimary),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("code_editor_input")
-                    )
+                    } else {
+                        BasicTextField(
+                            value = code,
+                            onValueChange = onCodeChange,
+                            textStyle = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 13.sp,
+                                lineHeight = 20.sp,
+                                color = colorScheme.onSurface
+                            ),
+                            cursorBrush = SolidColor(colorScheme.primary),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("code_editor_input")
+                        )
+                    }
                 }
             }
-        }
 
-        // Quick Symbol Toolbar (shown only in editable mode)
-        if (!readOnly) {
-            QuickSymbolsBar(
-                onInsertSymbol = { symbol ->
-                    onCodeChange(code + symbol)
-                }
-            )
+            if (!readOnly) {
+                HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.6f))
+                QuickSymbolsBar(
+                    onInsertSymbol = { symbol ->
+                        onCodeChange(code + symbol)
+                    }
+                )
+            }
         }
     }
 }
@@ -211,15 +224,18 @@ fun QuickSymbolsBar(
     onInsertSymbol: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val quickSymbols = listOf(
-        "    ", "{", "}", "(", ")", ";", "<<", ">>", "::", "*", "&",
-        "\"", "'", "=", "std::", "cout", "cin", "endl", "vector", "int"
-    )
+    val colorScheme = MaterialTheme.colorScheme
+    val quickSymbols = remember {
+        listOf(
+            "    ", "{", "}", "(", ")", ";", "<<", ">>", "::", "*", "&",
+            "\"", "'", "=", "std::", "cout", "cin", "endl", "vector", "int"
+        )
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(CppNavyCard.copy(alpha = 0.8f))
+            .background(colorScheme.surfaceContainer)
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 8.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -229,11 +245,11 @@ fun QuickSymbolsBar(
             Surface(
                 onClick = { onInsertSymbol(sym) },
                 shape = RoundedCornerShape(6.dp),
-                color = CppNavyBorder,
+                color = colorScheme.surfaceContainerHighest,
                 modifier = Modifier.height(28.dp)
             ) {
                 Box(
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -242,7 +258,7 @@ fun QuickSymbolsBar(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = CppBluePrimary
+                            color = colorScheme.onSurface
                         )
                     )
                 }
